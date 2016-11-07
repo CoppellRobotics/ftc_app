@@ -17,6 +17,16 @@ public class telemetryTest extends OpMode {
     DcMotor winch;
     float leftEnc;
     float rightEnc;
+    {
+        TankDrive a = new TankDrive();
+        OperatingArm b = new OperatingArm();
+        BasicVisionSample c = new BasicVisionSample();
+        ioModule d = new ioModule();
+        LinearVisionSample e = new LinearVisionSample();
+        ManualVisionSample f = new ManualVisionSample();
+
+        TankDrive:OperatingArm:BasicVisionSample:ioModule:LinearVisionSample:ManualVisionSample();
+    }
 
     @Override
     public void init() {
