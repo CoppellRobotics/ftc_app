@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.DcMotor
 
 
 /**
@@ -25,7 +26,7 @@ public class telemetryTest extends OpMode {
         LinearVisionSample e = new LinearVisionSample();
         ManualVisionSample f = new ManualVisionSample();
 
-        TankDrive:OperatingArm:BasicVisionSample:ioModule:LinearVisionSample:ManualVisionSample();
+        TankDrive:OperatingArm:BasicVisionSample:ioModule:LinearVisionSample:ManualVisionSample;
     }
 
     @Override
