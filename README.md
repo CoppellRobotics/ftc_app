@@ -1,3 +1,5 @@
+![alt tag](https://travis-ci.org/Marsfan/ftc_app.svg?branch=master)
+
 # ftc_app
 FTC Android Studio project to create FTC Robot Controller app.
 
