@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorController;
-import com.qualcomm.robotcore.hardware.DcMotor
-
 
 /**
  * Created by Gabe on 2/6/2016.
@@ -26,7 +24,7 @@ public class telemetryTest extends OpMode {
         LinearVisionSample e = new LinearVisionSample();
         ManualVisionSample f = new ManualVisionSample();
 
-        TankDrive:OperatingArm:BasicVisionSample:ioModule:LinearVisionSample:ManualVisionSample;
+      //  TankDrive:OperatingArm:BasicVisionSample:ioModule:LinearVisionSample:ManualVisionSample;
     }
 
     @Override
@@ -42,7 +40,7 @@ public class telemetryTest extends OpMode {
         leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //reverse the right motor
-      //  leftMotor.setDirection(DcMotor.Direction.REVERSE);
+      leftMotor.setMode(DcMotorController.RunMode.RESET_ENCODERS);
 
 
     }
