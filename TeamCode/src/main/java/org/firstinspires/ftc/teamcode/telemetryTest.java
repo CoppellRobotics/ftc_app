@@ -20,14 +20,14 @@ public class telemetryTest extends OpMode {
     float rightEnc;
     @Override
     public void init() {
-        //get references to the motors from the hardware map
-        leftMotor = hardwareMap.dcMotor.get("leftMotor");
+
+        leftMotor = hardwareMap.dcMotor.get("leftMotor"); //get references to the motors from the hardware map
         rightMoto = hardwareMap.dcMotor.get("rightMoto");
         rack = hardwareMap.dcMotor.get("rack");
         winch = hardwareMap.dcMotor.get("winch");
-        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);//motors stop and reset encoder
         rightMoto.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);//motors run without encoder
         leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //reverse the right motor
@@ -61,15 +61,15 @@ public class telemetryTest extends OpMode {
         } else if(rackPower2 == true) {
             rack.setPower(-1);
         } else {
-            rack.setPower(0);
+            rack.setPower(0);//rack does not move because the button is not being pressed
         }
         //read buttons to control winch
         if(winchPower1 == true) {
-            winch.setPower(1);
+            winch.setPower(1);//winch moving backwards
         } else if(winchPower2 == true) {
-            winch.setPower(-1);
+            winch.setPower(-1); // winch moving forward
         } else {
-            winch.setPower(0);
+            winch.setPower(0);// winch not in motion
         }
 
         //read left and right gamepads to control winch
@@ -84,7 +84,7 @@ public class telemetryTest extends OpMode {
             rightMoto.setPower(-right2);
         }
 
-        leftEnc = leftMotor.getCurrentPosition() / 1440;
+        leftEnc = leftMotor.getCurrentPosition() / 1440;// full revolution of encoder
         rightEnc = leftMotor.getCurrentPosition() / 1440;
         // Encoders currently read number of rotations from start (with negative rotations subtracting).
         //TODO add conversion to distance travled (just to test)
