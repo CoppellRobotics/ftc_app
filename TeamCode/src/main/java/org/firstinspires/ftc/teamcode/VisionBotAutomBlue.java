@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -9,8 +10,14 @@ import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
@@ -22,12 +29,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 public class VisionBotAutomBlue extends LinearOpMode {
     private DcMotor leftMotor;
     private DcMotor rightMotor;
-    private DcMotor launcher;
-    private DcMotor loader;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
+
+        float mmPerInch = 25.4f;
+        float mmBotWidth = 18 * mmPerInch;            // ... or whatever is right for your robot
+        float mmFTCFieldWidth = (12 * 12 - 2) * mmPerInch;
+
 
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
@@ -50,6 +60,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         beacons.get(1).setName("Tools");
         beacons.get(2).setName("Lego");
         beacons.get(3).setName("Gears");
+        VuforiaTrackableDefaultListener wheels = (VuforiaTrackableDefaultListener) beacons.get(0).getListener();
         VuforiaTrackableDefaultListener tools = (VuforiaTrackableDefaultListener) beacons.get(1).getListener();
         VuforiaTrackableDefaultListener lego = (VuforiaTrackableDefaultListener) beacons.get(2).getListener();
         VuforiaTrackableDefaultListener gears = (VuforiaTrackableDefaultListener) beacons.get(3).getListener();
@@ -58,48 +69,43 @@ public class VisionBotAutomBlue extends LinearOpMode {
         waitForStart();
         beacons.activate();
 
+
         leftMotor.setPower(1);
         rightMotor.setPower(1);
         while (opModeIsActive()) {
-        /*    while (opModeIsActive() && tools.getRawPose() == null) {
+            while (opModeIsActive() && tools.getRawPose() == null) {
                 idle();
-            }*/
+            }
 
             leftMotor.setPower(0);
             rightMotor.setPower(0);
-            if (tools.getRawPose() != null) {
+            OpenGLMatrix toolsPose = tools.getPose();
+            OpenGLMatrix legoPose = lego.getPose();
+            OpenGLMatrix gearsPose = gears.getPose();
+            if (toolsPose != null) {
+                double ZDist = toolsPose.getTranslation().get(2);
+                ZDist = .056328* ZDist + 8.2697;
                 VectorF angles = anglesFromTarget(tools);
-                VectorF trans = navOffWall(tools.getPose().getTranslation(), Math.toDegrees(angles.get(0))-90, new VectorF(500, 0, 0));
-                telemetry.addData("trans", trans);
-                telemetry.addData("1", trans.get(0));
-                telemetry.addData("x", Math.toDegrees(angles.get(0)));
-                telemetry.addData("y", Math.toDegrees(angles.get(1)));
-                telemetry.addData("z", Math.toDegrees(angles.get(2)));
-            }
-            if (lego.getRawPose() != null) {
-                VectorF angles = anglesFromTarget(lego);
-                VectorF trans = navOffWall(lego.getPose().getTranslation(), Math.toDegrees(angles.get(0))-90, new VectorF(500, 0, 0));
-                telemetry.addData("trans", trans);
-                telemetry.addData("1", trans.get(0));
-                telemetry.addData("x", Math.toDegrees(angles.get(0)));
-                telemetry.addData("y", Math.toDegrees(angles.get(1)));
-                telemetry.addData("z", Math.toDegrees(angles.get(2)));
-            }
-            if (gears.getRawPose() != null) {
-                VectorF angles = anglesFromTarget(gears);
-                VectorF trans = navOffWall(gears.getPose().getTranslation(), Math.toDegrees(angles.get(0))-90, new VectorF(500, 0, 0));
-                telemetry.addData("trans", trans);
-                telemetry.addData("1", trans.get(0));
-                telemetry.addData("x", Math.toDegrees(angles.get(0)));
-                telemetry.addData("y", Math.toDegrees(angles.get(1)));
-                telemetry.addData("z", Math.toDegrees(angles.get(2)));
-
-            }
-            telemetry.update();
-
-
+                VectorF trans = navOffWall(toolsPose.getTranslation(), Math.toDegrees(angles.get(0)) - 90, new VectorF(500, 0, 0));
+                telemetry.addData("x", toolsPose.getTranslation().get(0));
+                telemetry.addData("y", toolsPose.getTranslation().get(1));
+                telemetry.addData("z", ZDist);
+                double dist = Math.sqrt((toolsPose.getTranslation().get(0) * toolsPose.getTranslation().get(0)) + (ZDist * ZDist));
+                telemetry.addData("dist:", dist);
+                telemetry.addData("rt", Math.sqrt(4));
+                //telemetry.addData("rotation", Math.toDegrees(Math.atan2(toolsPose.getTranslation().get(2), toolsPose.getTranslation().get(0)))+90);
+                // if(toolsPose.getTranslation().get(0) > 0){
+                telemetry.addData("rotation", (Math.atan(toolsPose.getTranslation().get(2) / toolsPose.getTranslation().get(0)))*(180/ Math.PI));
+          //  }
+            // telemetry.addData("angles", angles);
         }
+
+        telemetry.update();
+
+
     }
+
+}
     public VectorF navOffWall(VectorF trans, double robotAngle, VectorF offWall){
         return new VectorF((float) (trans.get(0) - offWall.get(0) *
                 Math.sin(Math.toRadians(robotAngle)) - offWall.get(2) *
