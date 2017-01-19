@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.HINT;
 import com.vuforia.Vuforia;
 
@@ -21,104 +22,227 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Gabe on 12/15/2016.
  */
 
-@Autonomous(name="VisionBotBlue")
+
+@Autonomous(name ="blueBot")
 public class VisionBotAutomBlue extends LinearOpMode {
     private DcMotor leftMotor;
     private DcMotor rightMotor;
+    enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
+    State state;
+
+    public static final String TAG = "Vuforia Sample";
+
+    OpenGLMatrix lastLocation = null;
+    VuforiaLocalizer vuforia;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
 
-        float mmPerInch = 25.4f;
-        float mmBotWidth = 18 * mmPerInch;            // ... or whatever is right for your robot
-        float mmFTCFieldWidth = (12 * 12 - 2) * mmPerInch;
-
-
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
-        leftMotor.setDirection(DcMotor.Direction.REVERSE);
-       /* leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);*/
 
-        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
-        params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
-        params.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
-        params.useExtendedTracking = true;
+        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        VuforiaLocalizer vuforia = ClassFactory.createVuforiaLocalizer(params);
-        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS, 4);
-
-        VuforiaTrackables beacons = vuforia.loadTrackablesFromAsset("FTC_2016-17");
-        beacons.get(0).setName("Wheels");
-        beacons.get(1).setName("Tools");
-        beacons.get(2).setName("Lego");
-        beacons.get(3).setName("Gears");
-        VuforiaTrackableDefaultListener wheels = (VuforiaTrackableDefaultListener) beacons.get(0).getListener();
-        VuforiaTrackableDefaultListener tools = (VuforiaTrackableDefaultListener) beacons.get(1).getListener();
-        VuforiaTrackableDefaultListener lego = (VuforiaTrackableDefaultListener) beacons.get(2).getListener();
-        VuforiaTrackableDefaultListener gears = (VuforiaTrackableDefaultListener) beacons.get(3).getListener();
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
+        parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
+        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+        this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
 
 
+        VuforiaTrackables targets = this.vuforia.loadTrackablesFromAsset("FTC_2016-17");
+        VuforiaTrackable wheels = targets.get(0);
+        wheels.setName("Wheels");
+        VuforiaTrackable tools = targets.get(1);
+        tools.setName("Tools");
+        VuforiaTrackable legos = targets.get(2);
+        legos.setName("Legos");
+        VuforiaTrackable gears = targets.get(3);
+        gears.setName("Gears");
+
+        List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
+        allTrackables.addAll(targets);
+
+        float mmPerInch        = 25.4f;
+        float mmPerFoot        = 304.8f;
+        float mmBotWidth       = 18 * mmPerInch;            // ... or whatever is right for your robot
+        float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
+
+
+        OpenGLMatrix wheelLoc = OpenGLMatrix
+                .translation(mmPerFoot * 1, -mmFTCFieldWidth/2, 0)
+                .multiplied(Orientation.getRotationMatrix(
+                        AxesReference.EXTRINSIC, AxesOrder.XZX,
+                        AngleUnit.DEGREES, 90, 0, 0));
+        wheels.setLocation(wheelLoc);
+        RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
+
+
+        OpenGLMatrix toolLoc = OpenGLMatrix
+                .translation(-mmFTCFieldWidth/2, mmPerFoot * 3, 0)
+                .multiplied(Orientation.getRotationMatrix(
+                        AxesReference.EXTRINSIC, AxesOrder.XZX,
+                        AngleUnit.DEGREES, 90, 90, 0));
+        tools.setLocation(toolLoc);
+        RobotLog.ii(TAG, "Tools Location=%s", format(toolLoc));
+
+
+
+
+        OpenGLMatrix legoLoc = OpenGLMatrix
+                .translation(-mmPerFoot*3, -mmFTCFieldWidth/2, 0)
+                .multiplied(Orientation.getRotationMatrix(
+                        AxesReference.EXTRINSIC, AxesOrder.XZX,
+                        AngleUnit.DEGREES, 90, 0, 0));
+        legos.setLocation(legoLoc);
+        RobotLog.ii(TAG, "Legos Location=%s", format(legoLoc));
+
+
+
+        OpenGLMatrix gearLoc = OpenGLMatrix
+                .translation(-mmFTCFieldWidth/2, -mmPerFoot *1, 0)
+                .multiplied(Orientation.getRotationMatrix(
+                        AxesReference.EXTRINSIC, AxesOrder.XZX,
+                        AngleUnit.DEGREES, 90, 90, 0));
+        gears.setLocation(gearLoc);
+        RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));
+
+
+        OpenGLMatrix phoneLoc = OpenGLMatrix
+                .translation(0,0,0)
+                .multiplied(Orientation.getRotationMatrix(
+                        AxesReference.EXTRINSIC, AxesOrder.YZY,
+                        AngleUnit.DEGREES, 0, 0, 0
+                ));
+        RobotLog.ii(TAG, "Phone Location=%s", format(phoneLoc));
+
+        ((VuforiaTrackableDefaultListener)wheels.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+        ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+        ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+        ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+
+
+        telemetry.addData("str", "str");
         waitForStart();
-        beacons.activate();
+        state = State.findingTarget;
+
+        targets.activate();
 
 
-        leftMotor.setPower(1);
-        rightMotor.setPower(1);
         while (opModeIsActive()) {
-            while (opModeIsActive() && tools.getRawPose() == null) {
-                idle();
+
+                for (VuforiaTrackable trackable : allTrackables) {
+                    telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
+
+                    OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                    if (robotLocationTransform != null) {
+                        lastLocation = robotLocationTransform;
+                    }
+                }
+
+            switch(state){
+                case findingTarget:
+                    if(lastLocation == null){
+                        leftMotor.setPower(.5);
+                        rightMotor.setPower(.5);
+                    }else{
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = state.turning;
+
+                    }
+                    telemetry.addData("state", "finding");
+                    break;
+
+                case turning:
+                    if (getOrientation(lastLocation).thirdAngle < 85) {
+                        rightMotor.setPower(.5);
+                        leftMotor.setPower(-.5);
+                    } else if (getOrientation(lastLocation).thirdAngle > 95) {
+                        leftMotor.setPower(.5);
+                        rightMotor.setPower(-.5);
+                    } else {
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = State.aligning;
+                  }
+                    telemetry.addData("state", "turning");
+                    break;
+
+                case aligning:
+                    if(getTranslation(lastLocation).get(0) > 304){
+                        leftMotor.setPower(.5);
+                        rightMotor.setPower(.5);
+                    }else{
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = State.backturning;
+                    }
+                    telemetry.addData("state", "aligning");
+
+                    break;
+                case backturning:
+                    if(getOrientation(lastLocation).firstAngle > 0){
+                        leftMotor.setPower(.5);
+                        rightMotor.setPower(-.5);
+                    }else{
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = state.done;
+                    }
+                    state = state.positioning;
+                    telemetry.addData("state", "backturning");
+                    break;
+                case analysis:
+                    state = state.positioning;
+                    telemetry.addData("state", "analysis");
+                    break;
+                case positioning:
+                    state = state.pressing;
+                    telemetry.addData("state", "positioning");
+                    break;
+                case pressing:
+                    state = state.done;
+                    telemetry.addData("state", "pressing");
+                    break;
+                case done:
+                    telemetry.addData("state", "done!");
+                    break;
+            }
+            telemetry.update();
+            if(lastLocation != null){
+                telemetry.addData("Pos", format(lastLocation));
+            }else{
+                telemetry.addData("Pos", "null");
             }
 
-            leftMotor.setPower(0);
-            rightMotor.setPower(0);
-            OpenGLMatrix toolsPose = tools.getPose();
-            OpenGLMatrix legoPose = lego.getPose();
-            OpenGLMatrix gearsPose = gears.getPose();
-            if (toolsPose != null) {
-                double ZDist = toolsPose.getTranslation().get(2);
-                ZDist = .056328* ZDist + 8.2697;
-                VectorF angles = anglesFromTarget(tools);
-                VectorF trans = navOffWall(toolsPose.getTranslation(), Math.toDegrees(angles.get(0)) - 90, new VectorF(500, 0, 0));
-                telemetry.addData("x", toolsPose.getTranslation().get(0));
-                telemetry.addData("y", toolsPose.getTranslation().get(1));
-                telemetry.addData("z", ZDist);
-                double dist = Math.sqrt((toolsPose.getTranslation().get(0) * toolsPose.getTranslation().get(0)) + (ZDist * ZDist));
-                telemetry.addData("dist:", dist);
-                telemetry.addData("rt", Math.sqrt(4));
-                //telemetry.addData("rotation", Math.toDegrees(Math.atan2(toolsPose.getTranslation().get(2), toolsPose.getTranslation().get(0)))+90);
-                // if(toolsPose.getTranslation().get(0) > 0){
-                telemetry.addData("rotation", (Math.atan(toolsPose.getTranslation().get(2) / toolsPose.getTranslation().get(0)))*(180/ Math.PI));
-          //  }
-            // telemetry.addData("angles", angles);
+
+
+
+
+
         }
 
-        telemetry.update();
-
-
-    }
-
 }
-    public VectorF navOffWall(VectorF trans, double robotAngle, VectorF offWall){
-        return new VectorF((float) (trans.get(0) - offWall.get(0) *
-                Math.sin(Math.toRadians(robotAngle)) - offWall.get(2) *
-                Math.cos(Math.toRadians(robotAngle))), trans.get(1), (float) (trans.get(2) + offWall.get(0) *
-                Math.cos(Math.toRadians(robotAngle)) - offWall.get(2) * Math.sin(Math.toRadians(robotAngle))));
+
+    String format(OpenGLMatrix transformationMatrix) {
+        return transformationMatrix.formatAsTransform();
     }
 
-    public VectorF anglesFromTarget(VuforiaTrackableDefaultListener image){
-        float [] data = image.getRawPose().getData();
-        float [] [] rotation = {{data[0], data[1]}, {data[4], data[5], data[6]}, {data[8], data[9], data[10]}};
-        double thetaX = Math.atan2(rotation[2][1], rotation[2][2]);
-        double thetaY = Math.atan2(-rotation[2][0], Math.sqrt(rotation[2][1] * rotation[2][1] + rotation[2][2] * rotation[2][2]));
-        double thetaZ = Math.atan2(rotation[1][0], rotation[0][0]);
-        return new VectorF((float)thetaX, (float)thetaY, (float)thetaZ);
+    Orientation getOrientation(OpenGLMatrix transformationMatrix){
+        Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+        return orientation;
+    }
+    VectorF getTranslation(OpenGLMatrix transformationMatrix){
+        VectorF translation = transformationMatrix.getTranslation();
+        return  translation;
     }
 }

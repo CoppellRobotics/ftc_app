@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.provider.ContactsContract;
-
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -22,24 +20,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Gabe on 1/17/2017.
+ * Created by Gabe on 1/18/2017.
  */
 
-@Autonomous(name = "Triangulation")
-public class VuoforiaTraiangulate extends LinearOpMode {
+public class BlueBot extends OpMode {
 
-
+    private DcMotor leftMotor;
+    private DcMotor rightMotor;
 
     public static final String TAG = "Vuforia Sample";
 
     OpenGLMatrix lastLocation = null;
     VuforiaLocalizer vuforia;
+    enum State {findingTarget, turning, analysis, positioning, pressing}
 
 
 
     @Override
-    public void runOpMode() throws InterruptedException {
-
+    public void init() {
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
         parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
@@ -69,7 +67,7 @@ public class VuoforiaTraiangulate extends LinearOpMode {
                 .translation(mmPerFoot * 1, -mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
+                        AngleUnit.DEGREES, 90, 180, 0));
         wheels.setLocation(wheelLoc);
         RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
 
@@ -89,7 +87,7 @@ public class VuoforiaTraiangulate extends LinearOpMode {
                 .translation(-mmPerFoot*3, -mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
+                        AngleUnit.DEGREES, 90, 180, 0));
         legos.setLocation(legoLoc);
         RobotLog.ii(TAG, "Legos Location=%s", format(legoLoc));
 
@@ -116,39 +114,17 @@ public class VuoforiaTraiangulate extends LinearOpMode {
         ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+    }
 
-        waitForStart();
+    @Override
+    public void loop() {
 
-        targets.activate();
 
-        while (opModeIsActive()) {
-
-            for (VuforiaTrackable trackable : allTrackables) {
-                /**
-                 * getUpdatedRobotLocation() will return null if no new information is available since
-                 * the last time that call was made, or if the trackable is not currently visible.
-                 * getRobotLocation() will return null if the trackable is not currently visible.
-                 */
-                telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
-
-                OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-                if (robotLocationTransform != null) {
-                    lastLocation = robotLocationTransform;
-                }
-            }
-
-            if (lastLocation != null) {
-                //  RobotLog.vv(TAG, "robot=%s", format(lastLocation));
-                telemetry.addData("orientation", getOrientation(lastLocation).firstAngle);
-                telemetry.addData("translation", getTranslation(lastLocation).get(0));
-                telemetry.addData("Pos", format(lastLocation));
-            } else {
-                telemetry.addData("Pos", "Unknown");
-            }
-            telemetry.update();
-        }
 
     }
+
+
+
     String format(OpenGLMatrix transformationMatrix) {
         return transformationMatrix.formatAsTransform();
     }
