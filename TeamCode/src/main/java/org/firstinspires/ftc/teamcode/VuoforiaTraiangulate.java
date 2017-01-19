@@ -149,15 +149,15 @@ public class VuoforiaTraiangulate extends LinearOpMode {
         }
 
     }
-    String format(OpenGLMatrix transformationMatrix) {
+    private String format(OpenGLMatrix transformationMatrix) {
         return transformationMatrix.formatAsTransform();
     }
 
-    Orientation getOrientation(OpenGLMatrix transformationMatrix){
+    private Orientation getOrientation(OpenGLMatrix transformationMatrix){
         Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
         return orientation;
     }
-    VectorF getTranslation(OpenGLMatrix transformationMatrix){
+    private VectorF getTranslation(OpenGLMatrix transformationMatrix){
         VectorF translation = transformationMatrix.getTranslation();
         return  translation;
     }

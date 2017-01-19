@@ -81,7 +81,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                 .translation(mmPerFoot * 1, -mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
+                        AngleUnit.DEGREES, 90, 0, 90));
         wheels.setLocation(wheelLoc);
         RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
 
@@ -101,7 +101,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                 .translation(-mmPerFoot*3, -mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
+                        AngleUnit.DEGREES, 90, 0, 90));
         legos.setLocation(legoLoc);
         RobotLog.ii(TAG, "Legos Location=%s", format(legoLoc));
 
