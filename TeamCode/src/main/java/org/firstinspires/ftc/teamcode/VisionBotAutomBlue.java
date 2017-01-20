@@ -1,12 +1,20 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import android.graphics.Bitmap;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.RobotLog;
+import com.vuforia.CameraCalibration;
 import com.vuforia.HINT;
+import com.vuforia.Image;
+import com.vuforia.Matrix34F;
+import com.vuforia.PIXEL_FORMAT;
+import com.vuforia.Tool;
+import com.vuforia.Vec3F;
 import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -21,8 +29,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,6 +49,17 @@ import java.util.List;
 
 @Autonomous(name ="blueBot")
 public class VisionBotAutomBlue extends LinearOpMode {
+
+    public final static Scalar blueLow = new Scalar(108, 0, 220);
+    public final static Scalar blueHigh = new Scalar(178, 255, 255);
+
+    public int BEACON_NOT_VISIBLE = 0;
+    public int BEACON_RED_BLUE = 1;
+    public int BEACON_BLUE_RED = 2;
+    public int BEACON_ALL_BLUE = 3;
+    public int BEACON_NO_BLUE = 4;
+
+
     private DcMotor leftMotor;
     private DcMotor rightMotor;
     enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
@@ -77,16 +105,16 @@ public class VisionBotAutomBlue extends LinearOpMode {
         float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
 
 
-        OpenGLMatrix wheelLoc = OpenGLMatrix
-                .translation(mmPerFoot * 1, -mmFTCFieldWidth/2, 0)
+        OpenGLMatrix wheelLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+                .translation(mmPerFoot * 1, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 90));
+                        AngleUnit.DEGREES, 90, 0, 0));
         wheels.setLocation(wheelLoc);
         RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
 
 
-        OpenGLMatrix toolLoc = OpenGLMatrix
+        OpenGLMatrix toolLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
                 .translation(-mmFTCFieldWidth/2, mmPerFoot * 3, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -97,17 +125,17 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 
 
-        OpenGLMatrix legoLoc = OpenGLMatrix
-                .translation(-mmPerFoot*3, -mmFTCFieldWidth/2, 0)
+        OpenGLMatrix legoLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+                .translation(-mmPerFoot*3, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 90));
+                        AngleUnit.DEGREES, 90, 0, 0));
         legos.setLocation(legoLoc);
         RobotLog.ii(TAG, "Legos Location=%s", format(legoLoc));
 
 
 
-        OpenGLMatrix gearLoc = OpenGLMatrix
+        OpenGLMatrix gearLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
                 .translation(-mmFTCFieldWidth/2, -mmPerFoot *1, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -116,7 +144,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));
 
 
-        OpenGLMatrix phoneLoc = OpenGLMatrix
+        OpenGLMatrix phoneLoc = OpenGLMatrix    //TODO will need to calibrate the phone location.
                 .translation(0,0,0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
@@ -140,7 +168,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         while (opModeIsActive()) {
 
                 for (VuforiaTrackable trackable : allTrackables) {
-                    telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
+                    telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");
 
                     OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
                     if (robotLocationTransform != null) {
@@ -202,6 +230,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
+                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), (VuforiaTrackableDefaultListener) wheels.getListener(), vuforia.getCameraCalibration());
+                    if (config == BEACON_BLUE_RED){
+                        //drive to the left
+                    }else if (config == BEACON_RED_BLUE){
+                        //drive to the right of the beacon
+                    }
                     state = state.positioning;
                     telemetry.addData("state", "analysis");
                     break;
@@ -244,5 +278,70 @@ public class VisionBotAutomBlue extends LinearOpMode {
     VectorF getTranslation(OpenGLMatrix transformationMatrix){
         VectorF translation = transformationMatrix.getTranslation();
         return  translation;
+    }
+
+    public Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int pixelFormat){
+        long numImgs = frame.getNumImages();
+        for (int i = 0; i < numImgs; i++){
+            if(frame.getImage(i).getFormat() == pixelFormat){
+                return frame.getImage(i);
+            }
+        }
+        return null;
+    }
+
+    public int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
+        OpenGLMatrix pose = beacon.getRawPose();
+
+        if(pose != null && img.getPixels() != null){
+            Matrix34F rawPose = new Matrix34F();
+            float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
+            rawPose.setData(poseData);
+
+            float[][] corners = new float[4][2];
+
+            corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left //TODO moves cropping system up. will require calibration
+            corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right //TODO moves cropping system up. will require calibration
+            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
+            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
+
+            Bitmap bm = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
+            bm.copyPixelsFromBuffer(img.getPixels());
+
+            Mat crop = new Mat(bm.getHeight(), bm.getWidth(), CvType.CV_8UC3);
+            Utils.bitmapToMat(bm, crop);
+
+            float x = Math.min(Math.min(corners[1][0], corners[3][0]), Math.min(corners[0][0], corners[2][0]));
+            float y = Math.min(Math.min(corners[1][1], corners[3][1]), Math.min(corners[0][1], corners[2][1]));
+            float width = Math.max(Math.abs(corners[0][0] - corners[2][0]), Math.abs(corners[1][0] - corners[3][0]));
+            float height = Math.max(Math.abs(corners[0][1] - corners[2][1]), Math.abs(corners[1][1] - corners[3][0]));
+
+            x = Math.max(x, 0);
+            y = Math.max(y, 0);
+
+            Mat cropped = new Mat(crop, new Rect((int) x, (int) y, (int) width, (int) height));
+
+
+            Imgproc.cvtColor(cropped, cropped, Imgproc.COLOR_RGB2HSV_FULL);
+
+            Mat mask = new Mat();
+            Core.inRange(cropped, blueLow, blueHigh, mask);
+            Moments mmnts = Imgproc.moments(mask, true);
+
+            if(mmnts.get_m00() > mask.total() * .8){
+                return BEACON_ALL_BLUE;
+            }else if (mmnts.get_m00() < mask.total()* .1){
+                return BEACON_NO_BLUE;
+            }
+
+            if((mmnts.get_m01() / mmnts.get_m00() < cropped.rows() / 2)){
+                return BEACON_RED_BLUE;
+            }else return BEACON_BLUE_RED;
+
+
+        }
+
+        return BEACON_NOT_VISIBLE;
+
     }
 }
