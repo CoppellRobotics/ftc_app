@@ -1,7 +1,14 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -38,9 +45,15 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static android.R.attr.delay;
+import static java.lang.System.out;
 
 /**
  * Created by Gabe on 12/15/2016.
@@ -62,6 +75,8 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
     private DcMotor leftMotor;
     private DcMotor rightMotor;
+
+
     enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
     State state;
 
@@ -82,11 +97,15 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
         parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
+
+
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
-        this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
+        vuforia.setFrameQueueCapacity(1);
 
 
-        VuforiaTrackables targets = this.vuforia.loadTrackablesFromAsset("FTC_2016-17");
+        VuforiaTrackables targets = vuforia.loadTrackablesFromAsset("FTC_2016-17");
         VuforiaTrackable wheels = targets.get(0);
         wheels.setName("Wheels");
         VuforiaTrackable tools = targets.get(1);
@@ -156,11 +175,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
         ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+        VuforiaTrackableDefaultListener wheelsL = (VuforiaTrackableDefaultListener) targets.get(0).getListener();
 
 
         telemetry.addData("str", "str");
         waitForStart();
-        state = State.findingTarget;
+        state = State.analysis;
 
         targets.activate();
 
@@ -179,12 +199,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
             switch(state){
                 case findingTarget:
                     if(lastLocation == null){
-                        leftMotor.setPower(.5);
-                        rightMotor.setPower(.5);
+                        leftMotor.setPower(.25);
+                        rightMotor.setPower(.25);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = state.turning;
+                        state = State.turning;
 
                     }
                     telemetry.addData("state", "finding");
@@ -192,11 +212,11 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                 case turning:
                     if (getOrientation(lastLocation).thirdAngle < 85) {
-                        rightMotor.setPower(.5);
-                        leftMotor.setPower(-.5);
+                        rightMotor.setPower(.25);
+                        leftMotor.setPower(-.25);
                     } else if (getOrientation(lastLocation).thirdAngle > 95) {
-                        leftMotor.setPower(.5);
-                        rightMotor.setPower(-.5);
+                        leftMotor.setPower(.25);
+                        rightMotor.setPower(-.25);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -206,9 +226,9 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     break;
 
                 case aligning:
-                    if(getTranslation(lastLocation).get(0) > 304){
-                        leftMotor.setPower(.5);
-                        rightMotor.setPower(.5);
+                    if(getTranslation(lastLocation).get(0) > 310){
+                        leftMotor.setPower(.25);
+                        rightMotor.setPower(.25);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -218,33 +238,38 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                     break;
                 case backturning:
-                    if(getOrientation(lastLocation).firstAngle > 0){
-                        leftMotor.setPower(.5);
-                        rightMotor.setPower(-.5);
+                    if(getOrientation(lastLocation).thirdAngle > 0){
+                        leftMotor.setPower(.25);
+                        rightMotor.setPower(-.25);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = state.done;
+                        state = State.analysis;
                     }
-                    state = state.positioning;
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
-                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), (VuforiaTrackableDefaultListener) wheels.getListener(), vuforia.getCameraCalibration());
-                    if (config == BEACON_BLUE_RED){
-                        //drive to the left
+                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), wheelsL, vuforia.getCameraCalibration());
+
+                    telemetry.addData("config", config);
+
+                    /* if (config == BEACON_BLUE_RED){
+                        telemetry.addData("config", "BLUERED");
                     }else if (config == BEACON_RED_BLUE){
-                        //drive to the right of the beacon
-                    }
-                    state = state.positioning;
+                        telemetry.addData("config", "REDBLUE");
+                    }else{
+                        telemetry.addData("config", "ERROR");
+                    }*/
+
+                    telemetry.update();
+                    state = State.backturning;
                     telemetry.addData("state", "analysis");
+
                     break;
                 case positioning:
-                    state = state.pressing;
                     telemetry.addData("state", "positioning");
                     break;
                 case pressing:
-                    state = state.done;
                     telemetry.addData("state", "pressing");
                     break;
                 case done:
@@ -267,6 +292,15 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 }
 
+    public int test(){
+        for(int i = 0; i < 10; i++){
+            if(i == 5){
+                return 1;
+            }
+        }
+        return 2;
+    }
+
     String format(OpenGLMatrix transformationMatrix) {
         return transformationMatrix.formatAsTransform();
     }
@@ -280,20 +314,25 @@ public class VisionBotAutomBlue extends LinearOpMode {
         return  translation;
     }
 
-    public Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int pixelFormat){
+    public Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
+
+        int x = 0;
         long numImgs = frame.getNumImages();
-        for (int i = 0; i < numImgs; i++){
-            if(frame.getImage(i).getFormat() == pixelFormat){
-                return frame.getImage(i);
-            }
-        }
-        return null;
+        for (int i = 0; i < numImgs; i++) {
+            if (frame.getImage(i).getFormat() == format) {
+                x = i;
+            }//if
+        }//for
+        return frame.getImage(x);
+
     }
 
     public int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
+
         OpenGLMatrix pose = beacon.getRawPose();
 
         if(pose != null && img.getPixels() != null){
+
             Matrix34F rawPose = new Matrix34F();
             float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
             rawPose.setData(poseData);
@@ -321,22 +360,35 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
             Mat cropped = new Mat(crop, new Rect((int) x, (int) y, (int) width, (int) height));
 
-
             Imgproc.cvtColor(cropped, cropped, Imgproc.COLOR_RGB2HSV_FULL);
 
             Mat mask = new Mat();
             Core.inRange(cropped, blueLow, blueHigh, mask);
             Moments mmnts = Imgproc.moments(mask, true);
 
+            Log.i("CentroidX", "" + ((mmnts.get_m10() / mmnts.get_m00())));
+            Log.i("CentroidY", "" + ((mmnts.get_m01() / mmnts.get_m00())));
+            telemetry.addData("CentroidX", ((mmnts.get_m10() / mmnts.get_m00())));
+
+            Bitmap test = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
+            Utils.bitmapToMat(test, cropped);
+
+
+
             if(mmnts.get_m00() > mask.total() * .8){
+                telemetry.addData("status", "all blue");
                 return BEACON_ALL_BLUE;
             }else if (mmnts.get_m00() < mask.total()* .1){
+                telemetry.addData("status", "no blue");
                 return BEACON_NO_BLUE;
+
             }
 
             if((mmnts.get_m01() / mmnts.get_m00() < cropped.rows() / 2)){
                 return BEACON_RED_BLUE;
-            }else return BEACON_BLUE_RED;
+            }else {
+                return BEACON_BLUE_RED;
+            }
 
 
         }
@@ -344,4 +396,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         return BEACON_NOT_VISIBLE;
 
     }
+
+
+
 }
