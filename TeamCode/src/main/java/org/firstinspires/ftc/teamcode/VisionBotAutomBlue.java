@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import org.lasarobotics.vision.opmode.VisionEnabledActivity;
+
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -8,7 +11,9 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
 import android.util.Log;
+import android.view.SurfaceView;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -36,11 +41,16 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.lasarobotics.vision.android.Camera;
 import org.lasarobotics.vision.android.Cameras;
 import org.lasarobotics.vision.ftc.resq.Beacon;
 import org.lasarobotics.vision.opmode.LinearVisionOpMode;
+import org.lasarobotics.vision.opmode.TestableVisionOpMode;
+import org.lasarobotics.vision.opmode.VisionEnabledActivity;
 import org.lasarobotics.vision.opmode.extensions.CameraControlExtension;
 import org.lasarobotics.vision.util.ScreenOrientation;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
 import org.opencv.core.Size;
 
 import java.util.ArrayList;
@@ -77,6 +87,9 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
+
+
+
         waitForVisionStart();                       //wait for camera to init
 
         this.setCamera(Cameras.PRIMARY);            //set camera. Primary is the big one
@@ -92,7 +105,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
         rotation.setIsUsingSecondaryCamera(false);
         rotation.disableAutoRotate();
-        rotation.setActivityOrientationFixed(ScreenOrientation.PORTRAIT);
+        rotation.setActivityOrientationFixed(ScreenOrientation.PORTRAIT_REVERSE);
 
         cameraControl.setColorTemperature(CameraControlExtension.ColorTemperature.AUTO);
         cameraControl.setAutoExposureCompensation();
@@ -107,12 +120,11 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
         parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
-
+        parameters.useExtendedTracking = true;
 
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
         vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
-        vuforia.setFrameQueueCapacity(1);
 
 
         VuforiaTrackables targets = vuforia.loadTrackablesFromAsset("FTC_2016-17");
@@ -127,6 +139,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targets);
+
 
         float mmPerInch        = 25.4f;
         float mmPerFoot        = 304.8f;
@@ -177,7 +190,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                 .translation(0,0,0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
-                        AngleUnit.DEGREES, 0, 0, 0
+                        AngleUnit.DEGREES, 0, 180, 0
                 ));
         RobotLog.ii(TAG, "Phone Location=%s", format(phoneLoc));
 
@@ -187,9 +200,9 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
         ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
 
 
-        telemetry.addData("str", "str");
+
         waitForStart();
-        state = State.findingTarget;
+        state = State.analysis;
 
         targets.activate();
 
@@ -221,11 +234,11 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
                 case turning:
                     if (getOrientation(lastLocation).thirdAngle < 85) {
-                        rightMotor.setPower(.25);
-                        leftMotor.setPower(-.25);
+                        rightMotor.setPower(.15);
+                        leftMotor.setPower(-.15);
                     } else if (getOrientation(lastLocation).thirdAngle > 95) {
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(-.15);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -239,9 +252,9 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     telemetry.addData("state", "turning");
                     break;
                 case aligningLeft:
-                    if(getTranslation(lastLocation).get(0) > 310){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(.25);
+                    if(getTranslation(lastLocation).get(0) > 326){
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(.15);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -249,12 +262,20 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     }
                     break;
                 case aligningright:
-                    state = State.backturning;
+                    if(getTranslation(lastLocation).get(0) > 414){
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(.15);
+                    }else{
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = State.pressing;
+                    }
+
                     break;
                 case backturning:
                     if(getOrientation(lastLocation).thirdAngle > 0){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(-.15);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -264,17 +285,23 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
+                    telemetry.addData("coordinates", beacon.getAnalysis().getLocationString());
+                    telemetry.addData("camera status", Camera.isHardwareAvailable());
                     if(beacon.getAnalysis().isLeftRed()){
                         telemetry.addData("str", "redblue" );
+                        state = State.turning;
                         buttonSide = false;
                     }else if(beacon.getAnalysis().isLeftBlue()){
                         telemetry.addData("str", "bluered");
+                        state = State.turning;
                         buttonSide = true;
                     }else {
                         telemetry.addData("str", "error");
+                        state = State.analysis;
                     }
 
-                    state = State.turning;
+                    telemetry.addData("Frame Rate", fps.getFPSString() + " FPS");
+                    telemetry.addData("beacon", beacon.getAnalysis().isBeaconFound());
                     telemetry.addData("state", "analysis");
 
                     break;
