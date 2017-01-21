@@ -36,24 +36,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
+import org.lasarobotics.vision.opmode.LinearVisionOpMode;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import static android.R.attr.delay;
-import static java.lang.System.out;
 
 /**
  * Created by Gabe on 12/15/2016.
@@ -61,16 +48,8 @@ import static java.lang.System.out;
 
 
 @Autonomous(name ="blueBot")
-public class VisionBotAutomBlue extends LinearOpMode {
+public class VisionBotAutomBlue extends LinearVisionOpMode {
 
-    public final static Scalar blueLow = new Scalar(108, 0, 220);
-    public final static Scalar blueHigh = new Scalar(178, 255, 255);
-
-    public int BEACON_NOT_VISIBLE = 0;
-    public int BEACON_RED_BLUE = 1;
-    public int BEACON_BLUE_RED = 2;
-    public int BEACON_ALL_BLUE = 3;
-    public int BEACON_NO_BLUE = 4;
 
 
     private DcMotor leftMotor;
@@ -249,18 +228,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
-                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), wheelsL, vuforia.getCameraCalibration());
-
-                    telemetry.addData("config", config);
-
-                    /* if (config == BEACON_BLUE_RED){
-                        telemetry.addData("config", "BLUERED");
-                    }else if (config == BEACON_RED_BLUE){
-                        telemetry.addData("config", "REDBLUE");
-                    }else{
-                        telemetry.addData("config", "ERROR");
-                    }*/
-
+                    waitFor
                     telemetry.update();
                     state = State.backturning;
                     telemetry.addData("state", "analysis");
@@ -314,88 +282,8 @@ public class VisionBotAutomBlue extends LinearOpMode {
         return  translation;
     }
 
-    public Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
-
-        int x = 0;
-        long numImgs = frame.getNumImages();
-        for (int i = 0; i < numImgs; i++) {
-            if (frame.getImage(i).getFormat() == format) {
-                x = i;
-            }//if
-        }//for
-        return frame.getImage(x);
-
-    }
-
-    public int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
-
-        OpenGLMatrix pose = beacon.getRawPose();
-
-        if(pose != null && img.getPixels() != null){
-
-            Matrix34F rawPose = new Matrix34F();
-            float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
-            rawPose.setData(poseData);
-
-            float[][] corners = new float[4][2];
-
-            corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left //TODO moves cropping system up. will require calibration
-            corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right //TODO moves cropping system up. will require calibration
-            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
-            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
-
-            Bitmap bm = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
-            bm.copyPixelsFromBuffer(img.getPixels());
-
-            Mat crop = new Mat(bm.getHeight(), bm.getWidth(), CvType.CV_8UC3);
-            Utils.bitmapToMat(bm, crop);
-
-            float x = Math.min(Math.min(corners[1][0], corners[3][0]), Math.min(corners[0][0], corners[2][0]));
-            float y = Math.min(Math.min(corners[1][1], corners[3][1]), Math.min(corners[0][1], corners[2][1]));
-            float width = Math.max(Math.abs(corners[0][0] - corners[2][0]), Math.abs(corners[1][0] - corners[3][0]));
-            float height = Math.max(Math.abs(corners[0][1] - corners[2][1]), Math.abs(corners[1][1] - corners[3][0]));
-
-            x = Math.max(x, 0);
-            y = Math.max(y, 0);
-
-            Mat cropped = new Mat(crop, new Rect((int) x, (int) y, (int) width, (int) height));
-
-            Imgproc.cvtColor(cropped, cropped, Imgproc.COLOR_RGB2HSV_FULL);
-
-            Mat mask = new Mat();
-            Core.inRange(cropped, blueLow, blueHigh, mask);
-            Moments mmnts = Imgproc.moments(mask, true);
-
-            Log.i("CentroidX", "" + ((mmnts.get_m10() / mmnts.get_m00())));
-            Log.i("CentroidY", "" + ((mmnts.get_m01() / mmnts.get_m00())));
-            telemetry.addData("CentroidX", ((mmnts.get_m10() / mmnts.get_m00())));
-
-            Bitmap test = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
-            Utils.bitmapToMat(test, cropped);
 
 
-
-            if(mmnts.get_m00() > mask.total() * .8){
-                telemetry.addData("status", "all blue");
-                return BEACON_ALL_BLUE;
-            }else if (mmnts.get_m00() < mask.total()* .1){
-                telemetry.addData("status", "no blue");
-                return BEACON_NO_BLUE;
-
-            }
-
-            if((mmnts.get_m01() / mmnts.get_m00() < cropped.rows() / 2)){
-                return BEACON_RED_BLUE;
-            }else {
-                return BEACON_BLUE_RED;
-            }
-
-
-        }
-
-        return BEACON_NOT_VISIBLE;
-
-    }
 
 
 
