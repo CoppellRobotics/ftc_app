@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
  * Created by Gabe on 12/18/2016.
  */
 
-@TeleOp(name="rotate 90 degrees")
 public class automTurn90 extends LinearOpMode {
     private DcMotor leftMotor;
     private DcMotor rightMotor;

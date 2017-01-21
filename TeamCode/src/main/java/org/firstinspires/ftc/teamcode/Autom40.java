@@ -10,7 +10,6 @@ import org.firstinspires.ftc.teamcode.robotUtils;
  * Created by Gabe on 12/17/2016.
  */
 
-@TeleOp(name="drive 40cm")
 public class Autom40 extends LinearOpMode{
     private DcMotor leftMotor;
     private DcMotor rightMotor;

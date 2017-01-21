@@ -65,7 +65,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
     boolean buttonSide = true; //buttonside refers to the side that our target is on. True means blue is left, false means blue is right.
 
-    enum State {findingTarget, turning, aligningLeft, aligningright, backturning, analysis, positioning, pressing, done};
+    enum State {findingTarget, turning, aligningLeft, aligningright, backturning, analysis, pressing, done};
     State state;
 
     public static final String TAG = "Vuforia Sample";
@@ -184,7 +184,6 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
         ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
-        VuforiaTrackableDefaultListener wheelsL = (VuforiaTrackableDefaultListener) targets.get(0).getListener();
 
 
         telemetry.addData("str", "str");
@@ -247,7 +246,6 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                         rightMotor.setPower(0);
                         state = State.backturning;
                     }
-                    state = State.backturning;
                     break;
                 case aligningright:
                     state = State.backturning;
@@ -278,9 +276,6 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     state = State.turning;
                     telemetry.addData("state", "analysis");
 
-                    break;
-                case positioning:
-                    telemetry.addData("state", "positioning");
                     break;
                 case pressing:
                     telemetry.addData("state", "pressing");

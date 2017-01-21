@@ -11,7 +11,6 @@ import org.firstinspires.ftc.teamcode.JoyStick;
  */
 
 
-@TeleOp(name="VisionBot")
 public class VisionBotTest extends OpMode{
     JoyStick js = new JoyStick();
     DcMotor leftMotor;

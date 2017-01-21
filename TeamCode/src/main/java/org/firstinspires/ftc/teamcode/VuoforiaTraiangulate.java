@@ -25,7 +25,6 @@ import java.util.List;
  * Created by Gabe on 1/17/2017.
  */
 
-@Autonomous(name = "Triangulation")
 public class VuoforiaTraiangulate extends LinearOpMode {
 
 

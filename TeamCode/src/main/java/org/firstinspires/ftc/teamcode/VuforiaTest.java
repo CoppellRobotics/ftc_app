@@ -18,7 +18,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
  * Created by Gabe on 12/15/2016.
  */
 
-@Autonomous(name="VuforiaTest")
 public class VuforiaTest extends LinearOpMode {
     private DcMotor leftMotor;
     private DcMotor rightMotor;
