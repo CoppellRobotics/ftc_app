@@ -31,7 +31,14 @@ public class CannonBot extends OpMode {
     }
     @Override
     public void loop() {
-        if (gamepad1.left_bumper) {
+        if(gamepad1.a){
+            loader.setPower(1);
+        }else if (gamepad1.b){
+            loader.setPower(-1);
+        }else{
+            loader.setPower(0);
+        }
+       /* if (gamepad1.left_bumper) {
             loader.setPower(1);
         } else {
             loader.setPower(0);
@@ -41,7 +48,7 @@ public class CannonBot extends OpMode {
             launcher.setPower(-1);
         } else {
             launcher.setPower(0);
-        }
+        }*/
 
         leftMotor.setPower(js.leftY(true));
         rightMotor.setPower(js.rightY(true));
