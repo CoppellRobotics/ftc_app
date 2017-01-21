@@ -110,6 +110,9 @@ public class BasicVisionSample extends VisionOpMode {
         telemetry.addData("Screen Rotation", rotation.getScreenOrientationActual());
         telemetry.addData("Frame Rate", fps.getFPSString() + " FPS");
         telemetry.addData("Frame Size", "Width: " + width + " Height: " + height);
+
+
+
     }
 
     @Override

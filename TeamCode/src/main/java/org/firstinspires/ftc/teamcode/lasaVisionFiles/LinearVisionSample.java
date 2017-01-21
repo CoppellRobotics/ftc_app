@@ -118,6 +118,8 @@ public class LinearVisionSample extends LinearVisionOpMode {
             telemetry.addData("Frame Size", "Width: " + width + " Height: " + height);
             telemetry.addData("Frame Counter", frameCount);
 
+
+
             //You can access the most recent frame data and modify it here using getFrameRgba() or getFrameGray()
             //Vision will run asynchronously (parallel) to any user code so your programs won't hang
             //You can use hasNewFrame() to test whether vision processed a new frame

@@ -36,7 +36,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.lasarobotics.vision.android.Cameras;
+import org.lasarobotics.vision.ftc.resq.Beacon;
 import org.lasarobotics.vision.opmode.LinearVisionOpMode;
+import org.lasarobotics.vision.opmode.extensions.CameraControlExtension;
+import org.lasarobotics.vision.util.ScreenOrientation;
+import org.opencv.core.Size;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,11 +57,15 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
 
 
+
+
     private DcMotor leftMotor;
     private DcMotor rightMotor;
 
 
-    enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
+    boolean buttonSide = true; //buttonside refers to the side that our target is on. True means blue is left, false means blue is right.
+
+    enum State {findingTarget, turning, aligningLeft, aligningright, backturning, analysis, positioning, pressing, done};
     State state;
 
     public static final String TAG = "Vuforia Sample";
@@ -67,6 +76,27 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+
+        waitForVisionStart();                       //wait for camera to init
+
+        this.setCamera(Cameras.PRIMARY);            //set camera. Primary is the big one
+        this.setFrameSize(new Size(900, 900));      //set camera view dimensions
+        enableExtension(Extensions.BEACON);         //Beacon detection
+        enableExtension(Extensions.ROTATION);       //Automatic screen rotation correction
+        enableExtension(Extensions.CAMERA_CONTROL); //Manual camera control
+
+        beacon.setAnalysisMethod(Beacon.AnalysisMethod.COMPLEX); //set analysis type, we currently are using fast, but the others should be better
+
+        beacon.setColorToleranceBlue(0);
+        beacon.setColorToleranceRed(0);
+
+        rotation.setIsUsingSecondaryCamera(false);
+        rotation.disableAutoRotate();
+        rotation.setActivityOrientationFixed(ScreenOrientation.PORTRAIT);
+
+        cameraControl.setColorTemperature(CameraControlExtension.ColorTemperature.AUTO);
+        cameraControl.setAutoExposureCompensation();
+
 
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
@@ -159,7 +189,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
 
         telemetry.addData("str", "str");
         waitForStart();
-        state = State.analysis;
+        state = State.findingTarget;
 
         targets.activate();
 
@@ -183,7 +213,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.turning;
+                        state = State.analysis;
 
                     }
                     telemetry.addData("state", "finding");
@@ -199,12 +229,16 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.aligning;
+                        if(buttonSide){
+                            state = State.aligningLeft;
+                        }else{
+                            state = State.aligningright;
+                        }
                   }
+
                     telemetry.addData("state", "turning");
                     break;
-
-                case aligning:
+                case aligningLeft:
                     if(getTranslation(lastLocation).get(0) > 310){
                         leftMotor.setPower(.25);
                         rightMotor.setPower(.25);
@@ -213,8 +247,10 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                         rightMotor.setPower(0);
                         state = State.backturning;
                     }
-                    telemetry.addData("state", "aligning");
-
+                    state = State.backturning;
+                    break;
+                case aligningright:
+                    state = State.backturning;
                     break;
                 case backturning:
                     if(getOrientation(lastLocation).thirdAngle > 0){
@@ -223,14 +259,23 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.analysis;
+                        state = State.pressing;
                     }
+
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
-                    waitFor
-                    telemetry.update();
-                    state = State.backturning;
+                    if(beacon.getAnalysis().isLeftRed()){
+                        telemetry.addData("str", "redblue" );
+                        buttonSide = false;
+                    }else if(beacon.getAnalysis().isLeftBlue()){
+                        telemetry.addData("str", "bluered");
+                        buttonSide = true;
+                    }else {
+                        telemetry.addData("str", "error");
+                    }
+
+                    state = State.turning;
                     telemetry.addData("state", "analysis");
 
                     break;
@@ -281,6 +326,7 @@ public class VisionBotAutomBlue extends LinearVisionOpMode {
         VectorF translation = transformationMatrix.getTranslation();
         return  translation;
     }
+
 
 
 
