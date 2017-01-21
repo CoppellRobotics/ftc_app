@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Hardware;
 
@@ -26,6 +27,7 @@ public class CannonBot extends OpMode {
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
         launcher = hardwareMap.dcMotor.get("launcher");
         loader = hardwareMap.dcMotor.get("loader");
+        leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         js.init(gamepad1);
 
     }
