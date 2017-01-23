@@ -1,19 +1,13 @@
 package org.firstinspires.ftc.teamcode;
 
 
-import android.content.ContentResolver;
-import android.content.Intent;
+
 import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.CameraCalibration;
 import com.vuforia.HINT;
@@ -45,32 +39,30 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static android.R.attr.delay;
-import static java.lang.System.out;
+
 
 /**
- * Created by Gabe on 12/15/2016.
+ * Created by Gabe R. on 12/15/2016.
+ * This should drive to the target, scan it, and push the correct button
  */
 
 
 @Autonomous(name ="blueBot")
 public class VisionBotAutomBlue extends LinearOpMode {
 
-    public final static Scalar blueLow = new Scalar(108, 0, 220);
-    public final static Scalar blueHigh = new Scalar(178, 255, 255);
+    private final static Scalar blueLow = new Scalar(108, 0, 220);
+    private final static Scalar blueHigh = new Scalar(178, 255, 255);
 
-    public int BEACON_NOT_VISIBLE = 0;
-    public int BEACON_RED_BLUE = 1;
-    public int BEACON_BLUE_RED = 2;
-    public int BEACON_ALL_BLUE = 3;
-    public int BEACON_NO_BLUE = 4;
+    private int BEACON_NOT_VISIBLE = 0;
+    private int BEACON_RED_BLUE = 1;
+    private int BEACON_BLUE_RED = 2;
+    private int BEACON_ALL_BLUE = 3;
+    private int BEACON_NO_BLUE = 4;
 
 
     private DcMotor leftMotor;
@@ -78,12 +70,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 
     enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
-    State state;
+    private State state;
 
-    public static final String TAG = "Vuforia Sample";
+    private static final String TAG = "Vuforia Sample";
 
-    OpenGLMatrix lastLocation = null;
-    VuforiaLocalizer vuforia;
+    private OpenGLMatrix lastLocation = null;
+    private VuforiaLocalizer vuforia;
 
 
     @Override
@@ -301,20 +293,19 @@ public class VisionBotAutomBlue extends LinearOpMode {
         return 2;
     }
 
-    String format(OpenGLMatrix transformationMatrix) {
+    private String format(OpenGLMatrix transformationMatrix) {
         return transformationMatrix.formatAsTransform();
     }
 
-    Orientation getOrientation(OpenGLMatrix transformationMatrix){
-        Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-        return orientation;
-    }
-    VectorF getTranslation(OpenGLMatrix transformationMatrix){
-        VectorF translation = transformationMatrix.getTranslation();
-        return  translation;
+    private Orientation getOrientation(OpenGLMatrix transformationMatrix){
+        return Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
     }
 
-    public Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
+    private VectorF getTranslation(OpenGLMatrix transformationMatrix){
+        return transformationMatrix.getTranslation();
+    }
+
+    private Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
 
         int x = 0;
         long numImgs = frame.getNumImages();
@@ -327,7 +318,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
     }
 
-    public int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
+    private int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
 
         OpenGLMatrix pose = beacon.getRawPose();
 
