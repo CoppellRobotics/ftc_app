@@ -172,7 +172,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
         telemetry.addData("str", "str");
         waitForStart();
-        state = State.analysis;
+        state = State.findingTarget;
 
         targets.activate();
 
@@ -298,7 +298,8 @@ public class VisionBotAutomBlue extends LinearOpMode {
     }
 
     private Orientation getOrientation(OpenGLMatrix transformationMatrix){
-        return Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+        Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+        return orientation;
     }
 
     private VectorF getTranslation(OpenGLMatrix transformationMatrix){
@@ -307,14 +308,13 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
     private Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
 
-        int x = 0;
         long numImgs = frame.getNumImages();
         for (int i = 0; i < numImgs; i++) {
             if (frame.getImage(i).getFormat() == format) {
-                x = i;
+                return frame.getImage(i);
             }//if
         }//for
-        return frame.getImage(x);
+        return null;
 
     }
 
@@ -322,7 +322,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
         OpenGLMatrix pose = beacon.getRawPose();
 
-        if(pose != null && img.getPixels() != null){
+        if(pose != null && img != null && img.getPixels() != null){
 
             Matrix34F rawPose = new Matrix34F();
             float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
@@ -332,8 +332,8 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
             corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left //TODO moves cropping system up. will require calibration
             corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right //TODO moves cropping system up. will require calibration
-            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
-            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
+            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, -92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
+            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, -92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
 
             Bitmap bm = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
             bm.copyPixelsFromBuffer(img.getPixels());
@@ -344,10 +344,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
             float x = Math.min(Math.min(corners[1][0], corners[3][0]), Math.min(corners[0][0], corners[2][0]));
             float y = Math.min(Math.min(corners[1][1], corners[3][1]), Math.min(corners[0][1], corners[2][1]));
             float width = Math.max(Math.abs(corners[0][0] - corners[2][0]), Math.abs(corners[1][0] - corners[3][0]));
-            float height = Math.max(Math.abs(corners[0][1] - corners[2][1]), Math.abs(corners[1][1] - corners[3][0]));
+            float height = Math.max(Math.abs(corners[0][1] - corners[2][1]), Math.abs(corners[1][1] - corners[3][1]));
 
             x = Math.max(x, 0);
             y = Math.max(y, 0);
+            width = (x + width > crop.cols())? crop.cols() - x : width;
+            height = (y + height > crop.rows())? crop.rows() - y : height;
 
             Mat cropped = new Mat(crop, new Rect((int) x, (int) y, (int) width, (int) height));
 
@@ -359,11 +361,6 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
             Log.i("CentroidX", "" + ((mmnts.get_m10() / mmnts.get_m00())));
             Log.i("CentroidY", "" + ((mmnts.get_m01() / mmnts.get_m00())));
-            telemetry.addData("CentroidX", ((mmnts.get_m10() / mmnts.get_m00())));
-
-            Bitmap test = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
-            Utils.bitmapToMat(test, cropped);
-
 
 
             if(mmnts.get_m00() > mask.total() * .8){
