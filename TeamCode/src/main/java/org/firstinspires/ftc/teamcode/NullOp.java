@@ -13,7 +13,6 @@ import java.util.jar.Attributes;
  */
 
 @TeleOp(name="Nullop")
-@Disabled
 public class NullOp extends OpMode{
     @Override
     public void init() {

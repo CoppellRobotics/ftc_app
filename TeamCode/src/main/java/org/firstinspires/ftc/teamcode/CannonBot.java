@@ -26,7 +26,7 @@ public class CannonBot extends OpMode {
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
         launcher = hardwareMap.dcMotor.get("launcher");
-        loader = hardwareMap.dcMotor.get("loader");
+        loader = hardwareMap.dcMotor.get("sweeper");
         leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         js.init(gamepad1);
 
@@ -54,6 +54,9 @@ public class CannonBot extends OpMode {
 
         leftMotor.setPower(js.leftY(true));
         rightMotor.setPower(js.rightY(true));
+        telemetry.addData("LeftY", js.leftY(true));
+        telemetry.addData("rightY", js.rightY(true));
+        telemetry.update();
     }
 
 }

@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
  * Created by Gabe on 10/31/2016.
  */
 
-public class JoyStick{
+public class   JoyStick{
 
         private float leftY;
         private float rightY;
