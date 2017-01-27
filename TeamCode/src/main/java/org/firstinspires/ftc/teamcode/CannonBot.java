@@ -9,6 +9,8 @@ import com.qualcomm.robotcore.util.Hardware;
 
 /**
  * Created by oxg0829 on 12/5/2016.
+ * Editied by Marsfan (gabe)
+ * this is the main code for our teleop mode.
  */
 
 
