@@ -92,12 +92,30 @@ import com.qualcomm.robotcore.wifi.WifiDirectAssistant;
 
 import org.firstinspires.ftc.robotcore.internal.AppUtil;
 import org.firstinspires.inspection.RcInspectionActivity;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 
 import java.io.File;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class FtcRobotControllerActivity extends Activity {
+  private BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
+      @Override
+      public void onManagerConnected(int status){
+          switch (status){
+              case LoaderCallbackInterface.SUCCESS:
+              {
+                  RobotLog.i(TAG, "OpenCV Loaded Sucessfully");
+              }break;
+              default:
+              {
+                  super.onManagerConnected(status);
+              }break;
+          }
+      }
+  };
 
   public static final String TAG = "RCActivity";
 
@@ -259,6 +277,14 @@ public class FtcRobotControllerActivity extends Activity {
     callback.networkConnectionUpdate(WifiDirectAssistant.Event.DISCONNECTED);
     readNetworkType(NETWORK_TYPE_FILENAME);
     bindToService();
+
+      if(!OpenCVLoader.initDebug()) {
+          RobotLog.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for Initialization");
+          OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mOpenCVCallBack);
+      }else{
+          RobotLog.d("OpenCV", "OpenCV library found inside package. Using it!");
+          mOpenCVCallBack.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+      }
   }
 
   protected UpdateUI createUpdateUI() {
