@@ -1,13 +1,24 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import org.lasarobotics.vision.opmode.VisionEnabledActivity;
 
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
 import android.util.Log;
+import android.view.SurfaceView;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.CameraCalibration;
 import com.vuforia.HINT;
@@ -30,71 +41,90 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
-
+import org.lasarobotics.vision.android.Camera;
+import org.lasarobotics.vision.android.Cameras;
+import org.lasarobotics.vision.ftc.resq.Beacon;
+import org.lasarobotics.vision.opmode.LinearVisionOpMode;
+import org.lasarobotics.vision.opmode.TestableVisionOpMode;
+import org.lasarobotics.vision.opmode.VisionEnabledActivity;
+import org.lasarobotics.vision.opmode.extensions.CameraControlExtension;
+import org.lasarobotics.vision.util.ScreenOrientation;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
+import org.opencv.core.Size;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
-
 /**
- * Created by Gabe R. on 12/15/2016.
- * This should drive to the target, scan it, and push the correct button
+ * Created by Gabe on 12/15/2016.
  */
 
 
 @Autonomous(name ="blueBot")
-public class VisionBotAutomBlue extends LinearOpMode {
+public class VisionBotAutomBlue extends LinearVisionOpMode {
 
-    private final static Scalar blueLow = new Scalar(108, 0, 220);
-    private final static Scalar blueHigh = new Scalar(178, 255, 255);
 
-    private int BEACON_NOT_VISIBLE = 0;
-    private int BEACON_RED_BLUE = 1;
-    private int BEACON_BLUE_RED = 2;
-    private int BEACON_ALL_BLUE = 3;
-    private int BEACON_NO_BLUE = 4;
+
 
 
     private DcMotor leftMotor;
     private DcMotor rightMotor;
 
 
-    enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
-    private State state;
+    boolean buttonSide = true; //buttonside refers to the side that our target is on. True means blue is left, false means blue is right.
 
-    private static final String TAG = "Vuforia Sample";
+    enum State {findingTarget, turning, aligningLeft, aligningright, backturning, analysis, pressing, done};
+    State state;
 
-    private OpenGLMatrix lastLocation = null;
-    private VuforiaLocalizer vuforia;
+    public static final String TAG = "Vuforia Sample";
+
+    OpenGLMatrix lastLocation = null;
+    VuforiaLocalizer vuforia;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
 
+
+
+
+        waitForVisionStart();                       //wait for camera to init
+
+        this.setCamera(Cameras.PRIMARY);            //set camera. Primary is the big one
+        this.setFrameSize(new Size(900, 900));      //set camera view dimensions
+        enableExtension(Extensions.BEACON);         //Beacon detection
+        enableExtension(Extensions.ROTATION);       //Automatic screen rotation correction
+        enableExtension(Extensions.CAMERA_CONTROL); //Manual camera control
+
+        beacon.setAnalysisMethod(Beacon.AnalysisMethod.COMPLEX); //set analysis type, we currently are using fast, but the others should be better
+
+        beacon.setColorToleranceBlue(0);
+        beacon.setColorToleranceRed(0);
+
+        rotation.setIsUsingSecondaryCamera(false);
+        rotation.disableAutoRotate();
+        rotation.setActivityOrientationFixed(ScreenOrientation.PORTRAIT_REVERSE);
+
+        cameraControl.setColorTemperature(CameraControlExtension.ColorTemperature.AUTO);
+        cameraControl.setAutoExposureCompensation();
+
+
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
+        leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
         parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
-
+        parameters.useExtendedTracking = true;
 
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
         vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
-        vuforia.setFrameQueueCapacity(1);
 
 
         VuforiaTrackables targets = vuforia.loadTrackablesFromAsset("FTC_2016-17");
@@ -109,6 +139,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targets);
+
 
         float mmPerInch        = 25.4f;
         float mmPerFoot        = 304.8f;
@@ -159,7 +190,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                 .translation(0,0,0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
-                        AngleUnit.DEGREES, 0, 0, 0
+                        AngleUnit.DEGREES, 0, 180, 0
                 ));
         RobotLog.ii(TAG, "Phone Location=%s", format(phoneLoc));
 
@@ -167,12 +198,11 @@ public class VisionBotAutomBlue extends LinearOpMode {
         ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
-        VuforiaTrackableDefaultListener wheelsL = (VuforiaTrackableDefaultListener) targets.get(0).getListener();
 
 
-        telemetry.addData("str", "str");
+
         waitForStart();
-        state = State.findingTarget;
+        state = State.analysis;
 
         targets.activate();
 
@@ -196,7 +226,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.turning;
+                        state = State.analysis;
 
                     }
                     telemetry.addData("state", "finding");
@@ -204,62 +234,76 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                 case turning:
                     if (getOrientation(lastLocation).thirdAngle < 85) {
-                        rightMotor.setPower(.25);
-                        leftMotor.setPower(-.25);
+                        rightMotor.setPower(.15);
+                        leftMotor.setPower(-.15);
                     } else if (getOrientation(lastLocation).thirdAngle > 95) {
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(-.15);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.aligning;
+                        if(buttonSide){
+                            state = State.aligningLeft;
+                        }else{
+                            state = State.aligningright;
+                        }
                   }
+
                     telemetry.addData("state", "turning");
                     break;
-
-                case aligning:
-                    if(getTranslation(lastLocation).get(0) > 310){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(.25);
+                case aligningLeft:
+                    if(getTranslation(lastLocation).get(0) > 326){
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(.15);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
                         state = State.backturning;
                     }
-                    telemetry.addData("state", "aligning");
+                    break;
+                case aligningright:
+                    if(getTranslation(lastLocation).get(0) > 414){
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(.15);
+                    }else{
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        state = State.pressing;
+                    }
 
                     break;
                 case backturning:
                     if(getOrientation(lastLocation).thirdAngle > 0){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                        leftMotor.setPower(.15);
+                        rightMotor.setPower(-.15);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.analysis;
+                        state = State.pressing;
                     }
+
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
-                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), wheelsL, vuforia.getCameraCalibration());
+                    telemetry.addData("coordinates", beacon.getAnalysis().getLocationString());
+                    telemetry.addData("camera status", Camera.isHardwareAvailable());
+                    if(beacon.getAnalysis().isLeftRed()){
+                        telemetry.addData("str", "redblue" );
+                        state = State.turning;
+                        buttonSide = false;
+                    }else if(beacon.getAnalysis().isLeftBlue()){
+                        telemetry.addData("str", "bluered");
+                        state = State.turning;
+                        buttonSide = true;
+                    }else {
+                        telemetry.addData("str", "error");
+                        state = State.analysis;
+                    }
 
-                    telemetry.addData("config", config);
-
-                    /* if (config == BEACON_BLUE_RED){
-                        telemetry.addData("config", "BLUERED");
-                    }else if (config == BEACON_RED_BLUE){
-                        telemetry.addData("config", "REDBLUE");
-                    }else{
-                        telemetry.addData("config", "ERROR");
-                    }*/
-
-                    telemetry.update();
-                    state = State.backturning;
+                    telemetry.addData("Frame Rate", fps.getFPSString() + " FPS");
+                    telemetry.addData("beacon", beacon.getAnalysis().isBeaconFound());
                     telemetry.addData("state", "analysis");
 
-                    break;
-                case positioning:
-                    telemetry.addData("state", "positioning");
                     break;
                 case pressing:
                     telemetry.addData("state", "pressing");
@@ -293,97 +337,22 @@ public class VisionBotAutomBlue extends LinearOpMode {
         return 2;
     }
 
-    private String format(OpenGLMatrix transformationMatrix) {
+    String format(OpenGLMatrix transformationMatrix) {
         return transformationMatrix.formatAsTransform();
     }
 
-    private Orientation getOrientation(OpenGLMatrix transformationMatrix){
+    Orientation getOrientation(OpenGLMatrix transformationMatrix){
         Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
         return orientation;
     }
-
-    private VectorF getTranslation(OpenGLMatrix transformationMatrix){
-        return transformationMatrix.getTranslation();
+    VectorF getTranslation(OpenGLMatrix transformationMatrix){
+        VectorF translation = transformationMatrix.getTranslation();
+        return  translation;
     }
 
-    private Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
-
-        long numImgs = frame.getNumImages();
-        for (int i = 0; i < numImgs; i++) {
-            if (frame.getImage(i).getFormat() == format) {
-                return frame.getImage(i);
-            }//if
-        }//for
-        return null;
-
-    }
-
-    private int getBeaconConfig(Image img, VuforiaTrackableDefaultListener  beacon, CameraCalibration camCal){
-
-        OpenGLMatrix pose = beacon.getRawPose();
-
-        if(pose != null && img != null && img.getPixels() != null){
-
-            Matrix34F rawPose = new Matrix34F();
-            float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
-            rawPose.setData(poseData);
-
-            float[][] corners = new float[4][2];
-
-            corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left //TODO moves cropping system up. will require calibration
-            corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right //TODO moves cropping system up. will require calibration
-            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, -92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
-            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, -92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
-
-            Bitmap bm = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
-            bm.copyPixelsFromBuffer(img.getPixels());
-
-            Mat crop = new Mat(bm.getHeight(), bm.getWidth(), CvType.CV_8UC3);
-            Utils.bitmapToMat(bm, crop);
-
-            float x = Math.min(Math.min(corners[1][0], corners[3][0]), Math.min(corners[0][0], corners[2][0]));
-            float y = Math.min(Math.min(corners[1][1], corners[3][1]), Math.min(corners[0][1], corners[2][1]));
-            float width = Math.max(Math.abs(corners[0][0] - corners[2][0]), Math.abs(corners[1][0] - corners[3][0]));
-            float height = Math.max(Math.abs(corners[0][1] - corners[2][1]), Math.abs(corners[1][1] - corners[3][1]));
-
-            x = Math.max(x, 0);
-            y = Math.max(y, 0);
-            width = (x + width > crop.cols())? crop.cols() - x : width;
-            height = (y + height > crop.rows())? crop.rows() - y : height;
-
-            Mat cropped = new Mat(crop, new Rect((int) x, (int) y, (int) width, (int) height));
-
-            Imgproc.cvtColor(cropped, cropped, Imgproc.COLOR_RGB2HSV_FULL);
-
-            Mat mask = new Mat();
-            Core.inRange(cropped, blueLow, blueHigh, mask);
-            Moments mmnts = Imgproc.moments(mask, true);
-
-            Log.i("CentroidX", "" + ((mmnts.get_m10() / mmnts.get_m00())));
-            Log.i("CentroidY", "" + ((mmnts.get_m01() / mmnts.get_m00())));
 
 
-            if(mmnts.get_m00() > mask.total() * .8){
-                telemetry.addData("status", "all blue");
-                return BEACON_ALL_BLUE;
-            }else if (mmnts.get_m00() < mask.total()* .1){
-                telemetry.addData("status", "no blue");
-                return BEACON_NO_BLUE;
 
-            }
-
-            if((mmnts.get_m01() / mmnts.get_m00() < cropped.rows() / 2)){
-                return BEACON_RED_BLUE;
-            }else {
-                return BEACON_BLUE_RED;
-            }
-
-
-        }
-
-        return BEACON_NOT_VISIBLE;
-
-    }
 
 
 

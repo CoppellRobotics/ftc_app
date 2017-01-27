@@ -10,9 +10,6 @@ android:
     - android-6
     - android-4.4
     - android-23
-    - cmake
-    - lldb
-    - ndk
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
 cache:
