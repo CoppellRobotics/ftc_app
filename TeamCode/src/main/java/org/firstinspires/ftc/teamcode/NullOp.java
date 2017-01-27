@@ -12,11 +12,10 @@ import java.util.jar.Attributes;
  * This file simply does nothing. It will allow for us to check for some basic errors
  */
 
-@TeleOp(name="Nullop")
+@TeleOp(name="Null Op")
 public class NullOp extends OpMode{
     @Override
     public void init() {
-     DcMotor leftMotor = hardwareMap.dcMotor.get("leftMotor");
     }
 
     @Override

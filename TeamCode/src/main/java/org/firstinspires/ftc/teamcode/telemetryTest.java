@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotorController;
 /**
  * Created by Gabe on 2/6/2016.
  */
+@TeleOp(name="main")
 public class telemetryTest extends OpMode {
     //declare variables that will represent motors to make life eaiser
     DcMotor leftMotor;
