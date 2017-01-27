@@ -14,7 +14,6 @@ import org.firstinspires.ftc.teamcode.JoyStick;
 /**
  * Created by Gabe on 2/6/2016.
  */
-@TeleOp(name="Encoder Value Read")
 public class EncoderData extends OpMode {
     //declare variables that will represent motors to make life eaiser
     DcMotor leftMotor;
