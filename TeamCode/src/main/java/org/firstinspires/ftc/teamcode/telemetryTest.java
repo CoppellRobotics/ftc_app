@@ -12,12 +12,12 @@ import com.qualcomm.robotcore.hardware.DcMotorController;
 @TeleOp(name="main")
 public class telemetryTest extends OpMode {
     //declare variables that will represent motors to make life eaiser
-    DcMotor leftMotor;
-    DcMotor rightMoto;
-    DcMotor rack;
-    DcMotor winch;
-    float leftEnc;
-    float rightEnc;
+    private DcMotor leftMotor;
+    private DcMotor rightMoto;
+    private DcMotor rack;
+    private DcMotor winch;
+    private float leftEnc;
+    private float rightEnc;
 
     @Override
     public void init() {
@@ -57,17 +57,17 @@ public class telemetryTest extends OpMode {
         boolean winchPower2 = gamepad1.y;
 
         //read the values of the rack buttons to control rack
-        if(rackPower1 == true) {
+        if(rackPower1) {
             rack.setPower(1);
-        } else if(rackPower2 == true) {
+        } else if(rackPower2) {
             rack.setPower(-1);
         } else {
             rack.setPower(0);//rack does not move because the button is not being pressed
         }
         //read buttons to control winch
-        if(winchPower1 == true) {
+        if(winchPower1) {
             winch.setPower(1);//winch moving backwards
-        } else if(winchPower2 == true) {
+        } else if(winchPower2) {
             winch.setPower(-1); // winch moving forward
         } else {
             winch.setPower(0);// winch not in motion

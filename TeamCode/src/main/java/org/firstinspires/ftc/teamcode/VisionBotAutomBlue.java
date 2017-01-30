@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 
 
 import android.graphics.Bitmap;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -298,14 +299,14 @@ public class VisionBotAutomBlue extends LinearOpMode {
     }
 
     private Orientation getOrientation(OpenGLMatrix transformationMatrix){
-        Orientation orientation = Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-        return orientation;
+        return Orientation.getOrientation(transformationMatrix, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
     }
 
     private VectorF getTranslation(OpenGLMatrix transformationMatrix){
         return transformationMatrix.getTranslation();
     }
 
+    @Nullable
     private Image getImageFromFrame(VuforiaLocalizer.CloseableFrame frame, int format) {
 
         long numImgs = frame.getNumImages();
