@@ -9,6 +9,8 @@ import android.util.Log;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.CameraCalibration;
 import com.vuforia.HINT;
@@ -52,7 +54,7 @@ import java.util.List;
  * This should drive to the target, scan it, and push the correct button
  */
 
-
+//Ethan wanted to be part of the code, and typed this so he was. :D
 @Autonomous(name ="blueBot")
 public class VisionBotAutomBlue extends LinearOpMode {
 
@@ -68,9 +70,10 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
     private DcMotor leftMotor;
     private DcMotor rightMotor;
+    private Servo pusher;
 
 
-    enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done};
+    enum State {findingTarget, turning, aligning, backturning, analysis, positioning, pressing, done, lost};
     private State state;
 
     private static final String TAG = "Vuforia Sample";
@@ -82,11 +85,16 @@ public class VisionBotAutomBlue extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
+        pusher = hardwareMap.servo.get("buttonPusher");
+        pusher.setPosition(0);
+
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
+        leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
 
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
         parameters.vuforiaLicenseKey = "AQ92H9H/////AAAAGTitPu+5QUlxl/5DeeMeZe9kUysq4fNXHaSrlNBKmasiCDfkzw+g8z6R+f1SZeDvSXrJd7JwHLedujT8NsMHAr8PRfGX011IMcYomFzn9VwS8MyaUXNeMaUzY7NPEC9cLzg0dJrxPWj101l09+K3d1bKa3jEc1271jRgAwzAnI80Eh0g0mK/8mCMW9zdXLjTH1xJ9T7qtTMUN3DQVo2FY3u+askvEVGFashI+6mZtFk4SAgoy2XY1fYqXiZN1Wz1gVCqyF8Hxi9KuoX/awJz+SI/jdgQn2nmp+aHgw1Hcm9oXL5ZB4UMFD7zV94Bg2sLbanoN6h3dTtIpYXGZgDzPWGMgDWisjJV3TvFTTVauFIK";
@@ -186,30 +194,37 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
                     if (robotLocationTransform != null) {
                         lastLocation = robotLocationTransform;
+                        telemetry.addData("Lost target", "No");
+                    }else if (robotLocationTransform == null && state != State.turning){
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(-.1);
+                        Thread.sleep(400);
+                        leftMotor.setPower(0);
+                        rightMotor.setPower(0);
+                        telemetry.addData("Lost target", "Yes");
                     }
                 }
 
             switch(state){
                 case findingTarget:
                     if(lastLocation == null){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(.25);
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
                         state = State.turning;
-
                     }
                     telemetry.addData("state", "finding");
                     break;
 
                 case turning:
-                    if (getOrientation(lastLocation).thirdAngle < 85) {
-                        rightMotor.setPower(.25);
-                        leftMotor.setPower(-.25);
-                    } else if (getOrientation(lastLocation).thirdAngle > 95) {
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                    if (getOrientation(lastLocation).thirdAngle > -87) {
+                        rightMotor.setPower(-.1);
+                        leftMotor.setPower(.1);
+                    } else if (getOrientation(lastLocation).thirdAngle < -95) {
+                        leftMotor.setPower(-.1);
+                        rightMotor.setPower(.1);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -219,9 +234,9 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     break;
 
                 case aligning:
-                    if(getTranslation(lastLocation).get(0) > 310){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(.25);
+                    if(getTranslation(lastLocation).get(0) > 409){
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -231,9 +246,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                     break;
                 case backturning:
-                    if(getOrientation(lastLocation).thirdAngle > 0){
-                        leftMotor.setPower(.25);
-                        rightMotor.setPower(-.25);
+                    if(getOrientation(lastLocation).thirdAngle > -180 && getOrientation(lastLocation).thirdAngle < 0) {
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(-.1);
+                    }else if(getOrientation(lastLocation).thirdAngle < 180 && getOrientation(lastLocation).thirdAngle > 0){
+                        leftMotor.setPower(-.1);
+                        rightMotor.setPower(.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
