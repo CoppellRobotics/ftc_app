@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.CameraCalibration;
@@ -79,14 +80,19 @@ public class VisionBotAutomBlue extends LinearOpMode {
     private static final String TAG = "Vuforia Sample";
 
     private OpenGLMatrix lastLocation = null;
+    private OpenGLMatrix distance = null;
     private VuforiaLocalizer vuforia;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
 
+
+
         pusher = hardwareMap.servo.get("buttonPusher");
+        pusher.setDirection(Servo.Direction.REVERSE);
         pusher.setPosition(0);
+
 
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
@@ -125,7 +131,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
 
 
-        OpenGLMatrix wheelLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix wheelLoc = OpenGLMatrix
                 .translation(mmPerFoot * 1, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -134,7 +140,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
 
 
-        OpenGLMatrix toolLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix toolLoc = OpenGLMatrix
                 .translation(-mmFTCFieldWidth/2, mmPerFoot * 3, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -145,7 +151,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 
 
-        OpenGLMatrix legoLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix legoLoc = OpenGLMatrix
                 .translation(-mmPerFoot*3, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -155,7 +161,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 
 
-        OpenGLMatrix gearLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix gearLoc = OpenGLMatrix
                 .translation(-mmFTCFieldWidth/2, -mmPerFoot *1, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -164,7 +170,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));
 
 
-        OpenGLMatrix phoneLoc = OpenGLMatrix    //TODO will need to calibrate the phone location.
+        OpenGLMatrix phoneLoc = OpenGLMatrix
                 .translation(0,0,0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
@@ -194,37 +200,32 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
                     if (robotLocationTransform != null) {
                         lastLocation = robotLocationTransform;
-                        telemetry.addData("Lost target", "No");
-                    }else if (robotLocationTransform == null && state != State.turning){
-                        leftMotor.setPower(.1);
-                        rightMotor.setPower(-.1);
-                        Thread.sleep(400);
-                        leftMotor.setPower(0);
-                        rightMotor.setPower(0);
-                        telemetry.addData("Lost target", "Yes");
                     }
                 }
 
             switch(state){
                 case findingTarget:
-                    if(lastLocation == null){
+                    if(lastLocation == null) {
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(.1);
+                    } else if(getTranslation(lastLocation).get(1) < 900){
                         leftMotor.setPower(.1);
                         rightMotor.setPower(.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.turning;
+                        state = State.analysis;
                     }
                     telemetry.addData("state", "finding");
                     break;
 
                 case turning:
                     if (getOrientation(lastLocation).thirdAngle > -87) {
-                        rightMotor.setPower(-.1);
-                        leftMotor.setPower(.1);
+                        rightMotor.setPower(-.07);
+                        leftMotor.setPower(.07);
                     } else if (getOrientation(lastLocation).thirdAngle < -95) {
-                        leftMotor.setPower(-.1);
-                        rightMotor.setPower(.1);
+                        leftMotor.setPower(-.07);
+                        rightMotor.setPower(.07);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -234,9 +235,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     break;
 
                 case aligning:
-                    if(getTranslation(lastLocation).get(0) > 409){
-                        leftMotor.setPower(.1);
-                        rightMotor.setPower(.1);
+                    if(getTranslation(lastLocation).get(0) > 450) {
+                        leftMotor.setPower(.07);
+                        rightMotor.setPower(.07);
+                   /* }else if(getTranslation(lastLocation).get(0) < 495){
+                        leftMotor.setPower(-.1);
+                        rightMotor.setPower(-.1);*/
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -246,45 +250,61 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                     break;
                 case backturning:
-                    if(getOrientation(lastLocation).thirdAngle > -180 && getOrientation(lastLocation).thirdAngle < 0) {
-                        leftMotor.setPower(.1);
-                        rightMotor.setPower(-.1);
-                    }else if(getOrientation(lastLocation).thirdAngle < 180 && getOrientation(lastLocation).thirdAngle > 0){
-                        leftMotor.setPower(-.1);
-                        rightMotor.setPower(.1);
+                    if(getOrientation(lastLocation).thirdAngle > -175 && getOrientation(lastLocation).thirdAngle < -45) {
+                        leftMotor.setPower(.07);
+                        rightMotor.setPower(-.07);
+                    }else if(getOrientation(lastLocation).thirdAngle < 180 && getOrientation(lastLocation).thirdAngle > 45){
+                        leftMotor.setPower(-.07);
+                        rightMotor.setPower(.07);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = State.analysis;
+                        state = State.positioning;
                     }
                     telemetry.addData("state", "backturning");
                     break;
                 case analysis:
-                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), wheelsL, vuforia.getCameraCalibration());
-
-                    telemetry.addData("config", config);
-
-                    /* if (config == BEACON_BLUE_RED){
-                        telemetry.addData("config", "BLUERED");
-                    }else if (config == BEACON_RED_BLUE){
-                        telemetry.addData("config", "REDBLUE");
-                    }else{
-                        telemetry.addData("config", "ERROR");
-                    }*/
-
-                    telemetry.update();
-                    state = State.backturning;
                     telemetry.addData("state", "analysis");
+                    int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), wheelsL, vuforia.getCameraCalibration());
+                    if(config == BEACON_RED_BLUE){
+                        pusher.setPosition(0);
+                        state = State.turning;
+                        telemetry.addData("config", "RED BLUE");
+                    }else if(config == BEACON_BLUE_RED){
+                        pusher.setPosition(1);
+                        state = State.turning;
+                        telemetry.addData("config", "BLUE RED");
+                    }else {
+                        pusher.setPosition(.5);
+                        state = State.analysis;
+                    }
+                    double lastenc = leftMotor.getCurrentPosition();
+                    telemetry.addData("config", config);
+                    telemetry.update();
 
                     break;
                 case positioning:
                     telemetry.addData("state", "positioning");
+                    if(getTranslation(lastLocation).get(1) < 1700 ){
+                        leftMotor.setPower(.2);
+                        rightMotor.setPower(.2);
+                    }else{
+                        state = State.done;
+                    }
                     break;
                 case pressing:
                     telemetry.addData("state", "pressing");
                     break;
                 case done:
                     telemetry.addData("state", "done!");
+                    break;
+                case lost:
+                    telemetry.addData("state", "lost Target");
+                    leftMotor.setPower(-.1);
+                    rightMotor.setPower(.1);
+                    wait(400);
+                    leftMotor.setPower(0);
+                    rightMotor.setPower(0);
                     break;
             }
             telemetry.update();
@@ -385,16 +405,17 @@ public class VisionBotAutomBlue extends LinearOpMode {
             if(mmnts.get_m00() > mask.total() * .8){
                 telemetry.addData("status", "all blue");
                 return BEACON_ALL_BLUE;
-            }else if (mmnts.get_m00() < mask.total()* .1){
+            }else if (mmnts.get_m00() < mask.total()* .05){
                 telemetry.addData("status", "no blue");
                 return BEACON_NO_BLUE;
 
             }
 
+            //yest this IS backwards, but because our camera is upside down, we have to do this. --g
             if((mmnts.get_m01() / mmnts.get_m00() < cropped.rows() / 2)){
-                return BEACON_RED_BLUE;
-            }else {
                 return BEACON_BLUE_RED;
+            }else {
+                return BEACON_RED_BLUE;
             }
 
 

@@ -48,7 +48,7 @@ public class CannonBot extends OpMode {
         }
         if(js.dpadLeft()){
             pusher.setPosition(0);
-        }else{
+        }else if(js.dpadRight()){
             pusher.setPosition(1);
         }
         leftMotor.setPower(js.leftY(true));

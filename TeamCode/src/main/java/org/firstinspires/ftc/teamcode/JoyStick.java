@@ -16,6 +16,7 @@ public class JoyStick{
 
 public void init(Gamepad gp){
     gamepad1 = gp;
+    gamepad1.setJoystickDeadzone(.3f);
 }
 
     public float leftY(boolean squared){
