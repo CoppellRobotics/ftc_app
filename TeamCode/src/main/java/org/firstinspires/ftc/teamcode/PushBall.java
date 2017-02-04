@@ -20,19 +20,28 @@ public class PushBall extends LinearOpMode {
 
         leftMotor = hardwareMap.dcMotor.get("leftMotor");
         rightMotor = hardwareMap.dcMotor.get("rightMotor");
-        leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+       // leftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
+
+        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         waitForStart();
 
-        leftMotor.setTargetPosition(1440 * 4);
-        rightMotor.setTargetPosition(1440 * 4);
-        leftMotor.setPower(1);
-        rightMotor.setPower(1);
-        while(leftMotor.isBusy() || rightMotor.isBusy()){
-            idle();
-        }
+            leftMotor.setTargetPosition(-(1440 * 4));
+           // leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            leftMotor.setPower(1);
+            rightMotor.setPower(1);
+            while (leftMotor.isBusy() && leftMotor.getCurrentPosition() > (1440*4)) {
+                telemetry.addData("LENC", leftMotor.getCurrentPosition());
+                telemetry.addData("RENC", rightMotor.getCurrentPosition());
+                telemetry.update();
+                idle();
+            }
+            leftMotor.setPower(0);
+            rightMotor.setPower(0);
+
     }
 }

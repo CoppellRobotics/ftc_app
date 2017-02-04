@@ -6,6 +6,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -42,6 +43,7 @@ import java.util.List;
  * Created by Gabe on 2/1/2017.
  */
 @Autonomous(name="beacon analysis test")
+@Disabled
 public class ButtonAnalysisTest extends LinearOpMode {
 
     private final static Scalar blueLow = new Scalar(108, 0, 220);

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -10,6 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotorController;
  * Created by Gabe on 2/6/2016.
  */
 @TeleOp(name="main")
+@Disabled
 public class telemetryTest extends OpMode {
     //declare variables that will represent motors to make life eaiser
     private DcMotor leftMotor;

@@ -196,13 +196,16 @@ public class VisionBotAutomRed extends LinearOpMode{
 
             switch(state){
                 case findingTarget:
-                    if(lastLocation == null){
+                    if(lastLocation == null) {
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(.1);
+                    } else if (getTranslation(lastLocation).get(0) > -1000) {
                         leftMotor.setPower(.1);
                         rightMotor.setPower(.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = VisionBotAutomBlue.State.turning;
+                        state = VisionBotAutomBlue.State.analysis;
                     }
                     telemetry.addData("state", "finding");
                     break;
@@ -223,9 +226,12 @@ public class VisionBotAutomRed extends LinearOpMode{
                     break;
 
                 case aligning:
-                    if(getTranslation(lastLocation).get(1) > -200){
+                    if(getTranslation(lastLocation).get(1) > -200) {
                         leftMotor.setPower(.1);
                         rightMotor.setPower(.1);
+                    }else if(getTranslation(lastLocation).get(1) < -210){
+                        leftMotor.setPower(-.1);
+                        rightMotor.setPower(-.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -236,15 +242,15 @@ public class VisionBotAutomRed extends LinearOpMode{
                     break;
                 case backturning:
                     if((getOrientation(lastLocation).thirdAngle < 180 && getOrientation(lastLocation).thirdAngle > 4) || (getOrientation(lastLocation).thirdAngle < -95 && getOrientation(lastLocation).thirdAngle > -180)) {
-                        leftMotor.setPower(-.08);
-                        rightMotor.setPower(.08);
+                        leftMotor.setPower(-.13);
+                        rightMotor.setPower(.13);
                     }else if(getOrientation(lastLocation).thirdAngle < 4 && getOrientation(lastLocation).thirdAngle > -90){
-                        leftMotor.setPower(.08);
-                        rightMotor.setPower(-.08);
+                        leftMotor.setPower(.13);
+                        rightMotor.setPower(-.13);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
-                        state = VisionBotAutomBlue.State.analysis;
+                        state = VisionBotAutomBlue.State.positioning;
                     }
                     telemetry.addData("state", "backturning");
                     break;
@@ -253,11 +259,11 @@ public class VisionBotAutomRed extends LinearOpMode{
                     int config = getBeaconConfig(getImageFromFrame(vuforia.getFrameQueue().take(), PIXEL_FORMAT.RGB565), gearsL, vuforia.getCameraCalibration());
                     if(config == BEACON_RED_BLUE){
                         pusher.setPosition(1);
-                        state = VisionBotAutomBlue.State.positioning;
+                        state = VisionBotAutomBlue.State.turning;
                         telemetry.addData("config", "RED BLUE");
                     }else if(config == BEACON_BLUE_RED){
                         pusher.setPosition(0);
-                        state = VisionBotAutomBlue.State.positioning;
+                        state = VisionBotAutomBlue.State.turning;
                         telemetry.addData("config", "BLUE RED");
                     }else {
                         pusher.setPosition(.5);
@@ -270,7 +276,7 @@ public class VisionBotAutomRed extends LinearOpMode{
                     break;
                 case positioning:
                     telemetry.addData("state", "positioning");
-                    if(getTranslation(lastLocation).get(1) < 1700 ){
+                    if(getTranslation(lastLocation).get(0) > -1700 ){
                         leftMotor.setPower(.2);
                         rightMotor.setPower(.2);
                     }else{
@@ -285,8 +291,8 @@ public class VisionBotAutomRed extends LinearOpMode{
                     break;
                 case lost:
                     telemetry.addData("state", "lost Target");
-                    leftMotor.setPower(-.1);
-                    rightMotor.setPower(.1);
+                    leftMotor.setPower(-.13);
+                    rightMotor.setPower(.13);
                     wait(400);
                     leftMotor.setPower(0);
                     rightMotor.setPower(0);

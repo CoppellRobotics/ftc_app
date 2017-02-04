@@ -119,8 +119,8 @@ public class VisionBotAutomBlue extends LinearOpMode {
         tools.setName("Tools");
         VuforiaTrackable legos = targets.get(2);
         legos.setName("Legos");
-        VuforiaTrackable gears = targets.get(3);
-        gears.setName("Gears");
+      //  VuforiaTrackable gears = targets.get(3);
+       // gears.setName("Gears");
 
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targets);
@@ -161,13 +161,13 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
 
 
-        OpenGLMatrix gearLoc = OpenGLMatrix
+    /*    OpenGLMatrix gearLoc = OpenGLMatrix
                 .translation(-mmFTCFieldWidth/2, -mmPerFoot *1, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
                         AngleUnit.DEGREES, 90, 90, 0));
         gears.setLocation(gearLoc);
-        RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));
+        RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));*/
 
 
         OpenGLMatrix phoneLoc = OpenGLMatrix
@@ -181,7 +181,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
         ((VuforiaTrackableDefaultListener)wheels.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
-        ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
+      //  ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLoc, parameters.cameraDirection);
         VuforiaTrackableDefaultListener wheelsL = (VuforiaTrackableDefaultListener) targets.get(0).getListener();
 
 
@@ -208,7 +208,7 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     if(lastLocation == null) {
                         leftMotor.setPower(.1);
                         rightMotor.setPower(.1);
-                    } else if(getTranslation(lastLocation).get(1) < 900){
+                    } else if(getTranslation(lastLocation).get(1) < 1000){
                         leftMotor.setPower(.1);
                         rightMotor.setPower(.1);
                     }else{
@@ -221,11 +221,11 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                 case turning:
                     if (getOrientation(lastLocation).thirdAngle > -87) {
-                        rightMotor.setPower(-.07);
-                        leftMotor.setPower(.07);
+                        rightMotor.setPower(-.13);
+                        leftMotor.setPower(.13);
                     } else if (getOrientation(lastLocation).thirdAngle < -95) {
-                        leftMotor.setPower(-.07);
-                        rightMotor.setPower(.07);
+                        leftMotor.setPower(-.13);
+                        rightMotor.setPower(.13);
                     } else {
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -235,12 +235,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
                     break;
 
                 case aligning:
-                    if(getTranslation(lastLocation).get(0) > 450) {
-                        leftMotor.setPower(.07);
-                        rightMotor.setPower(.07);
-                   /* }else if(getTranslation(lastLocation).get(0) < 495){
+                    if(getTranslation(lastLocation).get(0) > 390) {
+                        leftMotor.setPower(.1);
+                        rightMotor.setPower(.1);
+                    }else if(getTranslation(lastLocation).get(0) < 370){
                         leftMotor.setPower(-.1);
-                        rightMotor.setPower(-.1);*/
+                        rightMotor.setPower(-.1);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
@@ -250,12 +250,12 @@ public class VisionBotAutomBlue extends LinearOpMode {
 
                     break;
                 case backturning:
-                    if(getOrientation(lastLocation).thirdAngle > -175 && getOrientation(lastLocation).thirdAngle < -45) {
-                        leftMotor.setPower(.07);
-                        rightMotor.setPower(-.07);
+                    if(getOrientation(lastLocation).thirdAngle > -177 && getOrientation(lastLocation).thirdAngle < -45) {
+                        leftMotor.setPower(.11);
+                        rightMotor.setPower(-.11);
                     }else if(getOrientation(lastLocation).thirdAngle < 180 && getOrientation(lastLocation).thirdAngle > 45){
-                        leftMotor.setPower(-.07);
-                        rightMotor.setPower(.07);
+                        leftMotor.setPower(-.11);
+                        rightMotor.setPower(.11);
                     }else{
                         leftMotor.setPower(0);
                         rightMotor.setPower(0);
