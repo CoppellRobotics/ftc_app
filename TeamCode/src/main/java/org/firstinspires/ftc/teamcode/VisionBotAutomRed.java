@@ -123,7 +123,7 @@ public class VisionBotAutomRed extends LinearOpMode{
         float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
 
 
-        OpenGLMatrix wheelLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix wheelLoc = OpenGLMatrix
                 .translation(mmPerFoot * 1, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -132,7 +132,7 @@ public class VisionBotAutomRed extends LinearOpMode{
         RobotLog.ii(TAG, "Wheels Location=%s", format(wheelLoc));
 
 
-        OpenGLMatrix toolLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix toolLoc = OpenGLMatrix
                 .translation(-mmFTCFieldWidth/2, mmPerFoot * 3, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -143,7 +143,7 @@ public class VisionBotAutomRed extends LinearOpMode{
 
 
 
-        OpenGLMatrix legoLoc = OpenGLMatrix  //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix legoLoc = OpenGLMatrix
                 .translation(-mmPerFoot*3, mmFTCFieldWidth/2, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -153,7 +153,7 @@ public class VisionBotAutomRed extends LinearOpMode{
 
 
 
-        OpenGLMatrix gearLoc = OpenGLMatrix   //TODO will need to move axes to fix for height, possibly xy corrdintes as well
+        OpenGLMatrix gearLoc = OpenGLMatrix
                 .translation(-mmFTCFieldWidth/2, -mmPerFoot *1, 0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
@@ -162,7 +162,7 @@ public class VisionBotAutomRed extends LinearOpMode{
         RobotLog.ii(TAG, "Gear Location=%s", format(gearLoc));
 
 
-        OpenGLMatrix phoneLoc = OpenGLMatrix    //TODO will need to calibrate the phone location.
+        OpenGLMatrix phoneLoc = OpenGLMatrix
                 .translation(0,0,0)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
@@ -354,10 +354,10 @@ public class VisionBotAutomRed extends LinearOpMode{
 
             float[][] corners = new float[4][2];
 
-            corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left //TODO moves cropping system up. will require calibration
-            corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right //TODO moves cropping system up. will require calibration
-            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, -92, 0)).getData();  //bottom right //TODO moves cropping system up. will require calibration
-            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, -92, 0)).getData();  //bottom left //TODO moves cropping system up. will require calibration
+            corners[0] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, 276, 0)).getData(); //upper left
+            corners[1] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, 276, 0)).getData();  //upper right
+            corners[2] = Tool.projectPoint(camCal, rawPose, new Vec3F(127, -92, 0)).getData();  //bottom right
+            corners[3] = Tool.projectPoint(camCal, rawPose, new Vec3F(-127, -92, 0)).getData();  //bottom left
 
             Bitmap bm = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.RGB_565);
             bm.copyPixelsFromBuffer(img.getPixels());
