@@ -9,8 +9,7 @@ android:
     - build-tools-23.0.3
     - build-tools-25.0.0
     - android-6
-#    - android-4.4
-    - android-23
+#    - android-23
     - cmake
     - lldb
     - ndk
