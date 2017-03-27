@@ -1,3 +1,5 @@
+#this file is for configuring travis automated build system.
+
 language: android
 jdk:
   - oraclejdk8
